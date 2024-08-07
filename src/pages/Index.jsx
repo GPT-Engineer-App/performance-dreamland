@@ -1,8 +1,9 @@
 import { useState, useEffect } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Facebook, Twitter, Instagram, Github, Paw, ChevronLeft, ChevronRight } from "lucide-react";
+import { Facebook, Twitter, Instagram, Github, Paw, ChevronLeft, ChevronRight, Award } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
+import { Progress } from "@/components/ui/progress";
 
 const catFacts = [
   "Cats sleep for about 70% of their lives.",
@@ -18,21 +19,27 @@ const catFacts = [
 ];
 
 const catBreeds = [
-  { name: "Siamese", origin: "Thailand", personality: "Vocal, intelligent, and social" },
-  { name: "Persian", origin: "Iran", personality: "Gentle, quiet, and dignified" },
-  { name: "Maine Coon", origin: "United States", personality: "Friendly, playful, and large" },
-  { name: "Bengal", origin: "United States", personality: "Active, energetic, and wild-looking" },
-  { name: "British Shorthair", origin: "United Kingdom", personality: "Calm, easygoing, and affectionate" },
+  { name: "Siamese", origin: "Thailand", personality: "Vocal, intelligent, and social", image: "https://upload.wikimedia.org/wikipedia/commons/2/25/Siam_lilacpoint.jpg" },
+  { name: "Persian", origin: "Iran", personality: "Gentle, quiet, and dignified", image: "https://upload.wikimedia.org/wikipedia/commons/1/15/White_Persian_Cat.jpg" },
+  { name: "Maine Coon", origin: "United States", personality: "Friendly, playful, and large", image: "https://upload.wikimedia.org/wikipedia/commons/5/5f/Maine_Coon_cat_by_Tomitheos.JPG" },
+  { name: "Bengal", origin: "United States", personality: "Active, energetic, and wild-looking", image: "https://upload.wikimedia.org/wikipedia/commons/b/ba/Paintedcats_Red_Star_standing.jpg" },
+  { name: "British Shorthair", origin: "United Kingdom", personality: "Calm, easygoing, and affectionate", image: "https://upload.wikimedia.org/wikipedia/commons/9/9d/Britishblue.jpg" },
 ];
 
 const Index = () => {
   const [catFact, setCatFact] = useState(catFacts[0]);
   const [currentBreedIndex, setCurrentBreedIndex] = useState(0);
   const [scrollY, setScrollY] = useState(0);
+  const [quizQuestion, setQuizQuestion] = useState(null);
+  const [quizScore, setQuizScore] = useState(0);
+  const [quizTotal, setQuizTotal] = useState(0);
+  const [catOfTheDay, setCatOfTheDay] = useState(null);
 
   useEffect(() => {
     const handleScroll = () => setScrollY(window.scrollY);
     window.addEventListener("scroll", handleScroll);
+    generateQuizQuestion();
+    generateCatOfTheDay();
     return () => window.removeEventListener("scroll", handleScroll);
   }, []);
 
@@ -47,6 +54,28 @@ const Index = () => {
 
   const prevBreed = () => {
     setCurrentBreedIndex((prevIndex) => (prevIndex - 1 + catBreeds.length) % catBreeds.length);
+  };
+
+  const generateQuizQuestion = () => {
+    const randomFact = catFacts[Math.floor(Math.random() * catFacts.length)];
+    const correctAnswer = Math.random() < 0.5;
+    setQuizQuestion({
+      fact: correctAnswer ? randomFact : `False: ${randomFact}`,
+      correctAnswer,
+    });
+  };
+
+  const handleQuizAnswer = (answer) => {
+    setQuizTotal((prev) => prev + 1);
+    if (answer === quizQuestion.correctAnswer) {
+      setQuizScore((prev) => prev + 1);
+    }
+    generateQuizQuestion();
+  };
+
+  const generateCatOfTheDay = () => {
+    const randomBreed = catBreeds[Math.floor(Math.random() * catBreeds.length)];
+    setCatOfTheDay(randomBreed);
   };
 
   return (
@@ -85,6 +114,27 @@ const Index = () => {
         </div>
 
         <div className="container mx-auto py-24 px-4">
+          <motion.div
+            initial={{ opacity: 0, y: 50 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.5 }}
+            className="mb-12"
+          >
+            <Card className="shadow-lg hover:shadow-xl transition-shadow duration-300">
+              <CardHeader>
+                <CardTitle className="text-2xl text-purple-600">Cat of the Day</CardTitle>
+                <CardDescription>Meet today's featured feline!</CardDescription>
+              </CardHeader>
+              <CardContent className="flex flex-col md:flex-row items-center">
+                <img src={catOfTheDay?.image} alt={catOfTheDay?.name} className="w-64 h-64 object-cover rounded-lg shadow-md mb-4 md:mb-0 md:mr-6" />
+                <div>
+                  <h3 className="text-xl font-semibold mb-2">{catOfTheDay?.name}</h3>
+                  <p className="text-gray-600 mb-1">Origin: {catOfTheDay?.origin}</p>
+                  <p className="italic">{catOfTheDay?.personality}</p>
+                </div>
+              </CardContent>
+            </Card>
+          </motion.div>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
             <motion.div
               initial={{ opacity: 0, x: -50 }}
@@ -135,6 +185,7 @@ const Index = () => {
                       transition={{ duration: 0.3 }}
                       className="text-center"
                     >
+                      <img src={catBreeds[currentBreedIndex].image} alt={catBreeds[currentBreedIndex].name} className="w-64 h-64 object-cover rounded-lg shadow-md mx-auto mb-4" />
                       <h3 className="text-xl font-semibold mb-2">{catBreeds[currentBreedIndex].name}</h3>
                       <p className="text-gray-600 mb-1">Origin: {catBreeds[currentBreedIndex].origin}</p>
                       <p className="italic">{catBreeds[currentBreedIndex].personality}</p>
@@ -163,28 +214,41 @@ const Index = () => {
           >
             <Card className="shadow-lg hover:shadow-xl transition-shadow duration-300">
               <CardHeader>
-                <CardTitle className="text-2xl text-purple-600">Cat Fact Generator</CardTitle>
-                <CardDescription>Learn interesting facts about cats!</CardDescription>
+                <CardTitle className="text-2xl text-purple-600">Cat Fact Quiz</CardTitle>
+                <CardDescription>Test your cat knowledge!</CardDescription>
               </CardHeader>
               <CardContent className="text-center">
                 <AnimatePresence mode="wait">
                   <motion.p
-                    key={catFact}
+                    key={quizQuestion?.fact}
                     initial={{ opacity: 0, y: 20 }}
                     animate={{ opacity: 1, y: 0 }}
                     exit={{ opacity: 0, y: -20 }}
                     transition={{ duration: 0.3 }}
                     className="text-lg mb-4 min-h-[3em]"
                   >
-                    {catFact}
+                    {quizQuestion?.fact}
                   </motion.p>
                 </AnimatePresence>
-                <Button 
-                  onClick={generateCatFact}
-                  className="bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 transition duration-300"
-                >
-                  Generate New Fact
-                </Button>
+                <div className="flex justify-center space-x-4 mb-4">
+                  <Button 
+                    onClick={() => handleQuizAnswer(true)}
+                    className="bg-green-500 hover:bg-green-600 transition duration-300"
+                  >
+                    True
+                  </Button>
+                  <Button 
+                    onClick={() => handleQuizAnswer(false)}
+                    className="bg-red-500 hover:bg-red-600 transition duration-300"
+                  >
+                    False
+                  </Button>
+                </div>
+                <div className="flex items-center justify-center">
+                  <Award className="text-yellow-500 mr-2" />
+                  <span className="text-lg font-semibold">Score: {quizScore}/{quizTotal}</span>
+                </div>
+                <Progress value={(quizScore / quizTotal) * 100} className="mt-2" />
               </CardContent>
             </Card>
           </motion.div>
@@ -215,6 +279,7 @@ const Index = () => {
                       initial={{ opacity: 0, scale: 0.8 }}
                       animate={{ opacity: 1, scale: 1 }}
                       transition={{ duration: 0.3, delay: index * 0.1 }}
+                      whileHover={{ scale: 1.05 }}
                     >
                       <img src={src} alt={`Cat ${index + 1}`} className="w-full h-40 object-cover rounded-lg shadow-md hover:shadow-lg transition-shadow duration-300" />
                     </motion.div>
